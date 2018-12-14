@@ -4,6 +4,8 @@
 # auto-rotate the screen and pointers
 # copyright 2018 Don Bowman (db@donbowman.ca)
 # Licensed under Apache License, Version 2.0
+# modified Jesse R Codling (jclds139@gmail.com)
+# Last Modified: 13 Dec 2018
 
 pointers=$(xinput list | awk '/Virtual core pointer/ { printing=1 } /Virtual core keyboard/ { printing=0} { if (printing) { gsub(".*id=",""); print $1 } }')
 
@@ -14,7 +16,21 @@ rotate_cursor() {
     done
 }
 
-monitor-sensor | awk '/Accelerometer orientation changed:/ { print $NF; fflush();}' | while read line
+# switches all Touchpads on or off
+tp_switch() {
+    for d in $(xinput list | awk '/Touchpad/ {gsub(".*id=",""); print $1}'); do
+        case $1 in
+            enable)
+                xinput set-prop $d "Device Enabled" 1
+            ;;
+            disable)
+                xinput set-prop $d "Device Enabled" 0
+            ;;
+        esac
+    done
+}
+
+monitor-sensor | awk '/Accel.*change.*/ { print $NF; fflush();}' | while read line
 do
     # If we have external monitor connected, do not rotate
     nscreens=$(xrandr  | grep -c " connected")
@@ -23,23 +39,30 @@ do
         line=normal
     fi
 
+    #find the output name of the main display
+    dname=$(xrandr | awk '/primary/ {print $1}')
+
     # Set the actions to be taken for each possible orientation
     case "$line" in
         normal)
-            xrandr --output eDP-1 --rotate normal 
+            xrandr --output $dname --rotate normal
             rotate_cursor 1 0 0 0 1 0 0 0 1
+            tp_switch enable
             ;;
         bottom-up)
-            xrandr --output eDP-1 --rotate inverted 
+            xrandr --output $dname --rotate inverted
             rotate_cursor -1 0 1 0 -1 1 0 0 1
+            tp_switch disable
             ;;
         right-up)
-            xrandr --output eDP-1 --rotate right 
+            xrandr --output $dname --rotate right
             rotate_cursor 0 1 0 -1 0 1 0 0 1
+            tp_switch disable
             ;;
         left-up)
-            xrandr --output eDP-1 --rotate left
+            xrandr --output $dname --rotate left
             rotate_cursor 0 -1 1 1 0 0 0 0 1
+            tp_switch disable
             ;;
     esac
 done
