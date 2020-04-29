@@ -5,14 +5,16 @@
 # copyright 2018 Don Bowman (db@donbowman.ca)
 # Licensed under Apache License, Version 2.0
 # modified Jesse R Codling (jclds139@gmail.com)
-# Last Modified: 13 Dec 2018
+# Last Modified: 29 Apr 2020
 
 pointers=$(xinput list | awk '/Virtual core pointer/ { printing=1 } /Virtual core keyboard/ { printing=0} { if (printing) { gsub(".*id=",""); print $1 } }')
 
 rotate_cursor() {
     for p in $pointers
     do
-        xinput set-prop $p "Coordinate Transformation Matrix" $*
+	if xinput --list --name-only $p | grep -ivq mouse; then # don't rotate mice, they rotate with the screen
+		xinput set-prop $p "Coordinate Transformation Matrix" $*
+	fi
     done
 }
 
