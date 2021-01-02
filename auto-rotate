@@ -9,12 +9,13 @@
 
 
 rotate_cursor() {
-	pointers=$(xinput list | awk '/Virtual core pointer/ { printing=1 } /Virtual core keyboard/ { printing=0} { if (printing) { gsub(".*id=",""); print $1 } }')
+	dname=$(xrandr | awk '/primary/ {print $1}')
+	pointers=$(xinput list | awk '/Touchscreen/ { gsub(".*id=",""); print $1 }')
+		# search for specific pointers (touchscreens, Styli, etc.) to rotate
 	for p in $pointers
 	do
-		if xinput --list --name-only $p | grep -ivq mouse; then # don't rotate mice, they rotate with the screen
-			xinput set-prop $p "Coordinate Transformation Matrix" $*
-		fi
+		xinput set-prop $p "Coordinate Transformation Matrix" $*
+		xinput map-to-output $p $dname # re-map touchscreen to only primary display
 	done
 }
 
