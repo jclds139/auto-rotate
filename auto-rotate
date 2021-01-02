@@ -5,7 +5,7 @@
 # copyright 2018 Don Bowman (db@donbowman.ca)
 # Licensed under Apache License, Version 2.0
 # modified Jesse R Codling (jclds139@gmail.com)
-# Last Modified: 29 Apr 2020
+# Last Modified: 30 Dec 2020
 
 
 rotate_cursor() {
@@ -32,20 +32,12 @@ tp_switch() {
 	done
 }
 
-monitor-sensor | awk '/Accel.*change.*/ { print $NF; fflush();}' | while read line
-do
-	# If we have external monitor connected, do not rotate
-	nscreens=$(xrandr  | grep -c " connected")
-	if [ $nscreens != 1 ]
-	then
-		line=normal
-	fi
-
+rotate_screen() {
     #find the output name of the main display
     dname=$(xrandr | awk '/primary/ {print $1}')
 
     # Set the actions to be taken for each possible orientation
-    case "$line" in
+    case "$1" in
 	    normal)
 		    xrandr --output $dname --rotate normal
 		    rotate_cursor 1 0 0 0 1 0 0 0 1
@@ -67,5 +59,20 @@ do
 		    tp_switch disable
 		    ;;
     esac
+}
+
+initial_orientation=`timeout -s INT --preserve-status 0.1 monitor-sensor | sed -n 's|.*orientation: \(.*\))$|\1|p'`
+rotate_screen "$initial_orientation"
+
+monitor-sensor | awk '/Accel.*change.*/ { print $NF; fflush();}' | while read line
+do
+	# If we have external monitor connected, do not rotate
+	# nscreens=$(xrandr  | grep -c " connected")
+	# if [ $nscreens != 1 ]
+	# then
+	# 	line=normal
+	# fi
+	rotate_screen "$line"
+
 done
 exit 0
